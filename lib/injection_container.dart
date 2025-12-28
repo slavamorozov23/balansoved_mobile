@@ -68,6 +68,7 @@ import 'package:balansoved_mobile/features/tasks/data/repositories/tasks_reposit
 import 'package:balansoved_mobile/features/tasks/domain/repositories/tasks_repository.dart';
 import 'package:balansoved_mobile/features/tasks/domain/usecases/get_task_usecase.dart';
 import 'package:balansoved_mobile/features/tasks/domain/usecases/get_tasks_usecase.dart';
+import 'package:balansoved_mobile/features/tasks/domain/usecases/save_task_usecase.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_cubit.dart';
 
 import 'package:balansoved_mobile/features/notifications/data/data_source/notifications_remote_data_source.dart';
@@ -76,6 +77,15 @@ import 'package:balansoved_mobile/features/notifications/domain/repositories/not
 import 'package:balansoved_mobile/features/notifications/domain/usecases/get_notifications_usecase.dart';
 import 'package:balansoved_mobile/features/notifications/domain/usecases/mark_as_delivered_usecase.dart';
 import 'package:balansoved_mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
+
+import 'package:balansoved_mobile/features/comments/data/data_source/comments_remote_data_source.dart';
+import 'package:balansoved_mobile/features/comments/data/repositories/comments_repository_impl.dart';
+import 'package:balansoved_mobile/features/comments/domain/repositories/comments_repository.dart';
+import 'package:balansoved_mobile/features/comments/domain/usecases/get_comments_usecase.dart';
+import 'package:balansoved_mobile/features/comments/domain/usecases/create_comment_usecase.dart';
+import 'package:balansoved_mobile/features/comments/domain/usecases/update_comment_usecase.dart';
+import 'package:balansoved_mobile/features/comments/domain/usecases/delete_comment_usecase.dart';
+import 'package:balansoved_mobile/features/comments/presentation/cubit/comments_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -131,6 +141,7 @@ Future<void> setupLocator() async {
   _registerEmployeesFeature();
   _registerTasksFeature();
   _registerNotificationsFeature();
+  _registerCommentsFeature();
 
   sl<Talker>().log('[SETUP] Dependencies registered');
 }
@@ -279,8 +290,15 @@ void _registerTasksFeature() {
 
   sl.registerLazySingleton(() => GetTasksUseCase(sl()));
   sl.registerLazySingleton(() => GetTaskUseCase(sl()));
+  sl.registerLazySingleton(() => SaveTaskUseCase(sl()));
 
-  sl.registerFactory(() => TasksCubit(getTasksUseCase: sl()));
+  sl.registerFactory(
+    () => TasksCubit(
+      getTasksUseCase: sl(),
+      getTaskUseCase: sl(),
+      saveTaskUseCase: sl(),
+    ),
+  );
 }
 
 void _registerNotificationsFeature() {
@@ -304,6 +322,33 @@ void _registerNotificationsFeature() {
       markAsDelivered: sl(),
       authCubit: sl(),
     ),
+  );
+}
+
+void _registerCommentsFeature() {
+  sl.registerFactory(
+    () => CommentsCubit(
+      getCommentsUseCase: sl(),
+      createCommentUseCase: sl(),
+      updateCommentUseCase: sl(),
+      deleteCommentUseCase: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => GetCommentsUseCase(sl()));
+  sl.registerLazySingleton(() => CreateCommentUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateCommentUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteCommentUseCase(sl()));
+
+  sl.registerLazySingleton<CommentsRepository>(
+    () => CommentsRepositoryImpl(
+      remoteDataSource: sl(),
+      localAuth: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<CommentsRemoteDataSource>(
+    () => CommentsRemoteDataSourceImpl(dio: sl()),
   );
 }
 

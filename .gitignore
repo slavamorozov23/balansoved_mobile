@@ -43,3 +43,26 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python virtual environments
+pythonProject/venv/
+**/venv/
+
+# Ignore token file with credentials (remove from repo manually if needed)
+token.json
+
+# Include Android keystore artifacts in repo (explicitly requested).
+!android/keystore/
+!android/keystore/**
+
+# Explicit exceptions (just in case) — keep these directories under version control
+!obsidian_balansoved/
+!pythonProject/
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md*:Zone.Identifier

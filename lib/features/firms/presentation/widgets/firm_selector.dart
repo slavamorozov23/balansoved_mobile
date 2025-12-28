@@ -96,56 +96,22 @@ class _FirmPickerSheet extends StatefulWidget {
 }
 
 class _FirmPickerSheetState extends State<_FirmPickerSheet> {
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text);
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   String _labelForFirm(FirmEntity firm) {
     return firm.name.isNotEmpty ? firm.name : firm.id;
   }
 
   @override
   Widget build(BuildContext context) {
-    final query = _query.trim().toLowerCase();
-    final filtered =
-        query.isEmpty
-            ? widget.firms
-            : widget.firms.where((f) {
-                final label = _labelForFirm(f).toLowerCase();
-                return label.contains(query);
-              }).toList();
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Поиск фирмы',
-            ),
-          ),
-          const SizedBox(height: 12),
           Expanded(
             child: ListView(
               controller: widget.scrollController,
               children: [
-                for (final firm in filtered)
+                for (final firm in widget.firms)
                   ListTile(
                     title: Text(_labelForFirm(firm)),
                     leading: Radio<String>(

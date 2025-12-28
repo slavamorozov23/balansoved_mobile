@@ -10,10 +10,13 @@ import 'package:balansoved_mobile/injection_container.dart' as di;
 import 'package:balansoved_mobile/injection_container.dart';
 import 'package:balansoved_mobile/router.dart';
 import 'package:balansoved_mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:balansoved_mobile/features/clients/presentation/cubit/clients_cubit.dart';
 import 'package:balansoved_mobile/features/employees/presentation/cubit/employees_cubit.dart';
 import 'package:balansoved_mobile/features/firms/presentation/cubit/firms_cubit.dart';
 import 'package:balansoved_mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:balansoved_mobile/features/rustore_notifications/presentation/cubit/rustore_notifications_cubit.dart';
+import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_cubit.dart';
+import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_chrome_cubit.dart';
 
 void main() async {
   runZonedGuarded(() async {
@@ -48,8 +51,11 @@ class MainApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthCubit>.value(value: di.sl<AuthCubit>()..checkAuth()),
+        BlocProvider<ClientsCubit>.value(value: di.sl<ClientsCubit>()),
         BlocProvider<EmployeesCubit>.value(value: di.sl<EmployeesCubit>()),
         BlocProvider<FirmsCubit>.value(value: di.sl<FirmsCubit>()),
+        BlocProvider<TasksCubit>.value(value: di.sl<TasksCubit>()),
+        BlocProvider<TasksChromeCubit>(create: (_) => TasksChromeCubit()),
         BlocProvider<NotificationsCubit>.value(
           value: di.sl<NotificationsCubit>(),
         ),
@@ -63,7 +69,7 @@ class MainApp extends StatelessWidget {
         theme: ThemeData(
           brightness: Brightness.light,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.teal,
+            seedColor: const Color(0xFF8B4513),
             brightness: Brightness.light,
           ),
           useMaterial3: true,
@@ -71,7 +77,7 @@ class MainApp extends StatelessWidget {
         darkTheme: ThemeData(
           brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.teal,
+            seedColor: const Color(0xFF8B4513),
             brightness: Brightness.dark,
           ),
           useMaterial3: true,

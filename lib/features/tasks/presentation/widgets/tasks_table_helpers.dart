@@ -53,6 +53,22 @@ class TasksTableHelpers {
     return names.join(', ');
   }
 
+  static List<String> formatClientNamesWithInnList(
+    List<String> clientIds,
+    List<ClientEntity> clients,
+  ) {
+    if (clientIds.isEmpty) return const [];
+    if (clients.isEmpty) return clientIds;
+
+    final byId = {for (final c in clients) c.id: c};
+    return clientIds.map((id) {
+      final c = byId[id];
+      if (c == null) return 'клиент не найден ($id)';
+      final inn = (c.inn ?? '').trim();
+      return inn.isNotEmpty ? '${c.name} ($inn)' : c.name;
+    }).toList();
+  }
+
   static String formatEmployeeNames(
     List<String> userIds,
     List<EmployeeEntity> employees,

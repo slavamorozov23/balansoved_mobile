@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:balansoved_mobile/features/clients/domain/entities/client_entity.dart';
@@ -28,6 +29,12 @@ class _ClientsTableState extends State<ClientsTable> {
 
   @override
   Widget build(BuildContext context) {
+    final enableSelection =
+        kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
+
     final data = List<ClientEntity>.from(widget.clients);
     data.sort((a, b) {
       int res;
@@ -65,152 +72,149 @@ class _ClientsTableState extends State<ClientsTable> {
       return _sortAsc ? res : -res;
     });
 
+    final table = ResizableDataTable(
+      prefsKey: 'clients_table_column_widths_v2',
+      sortColumnIndex: _sortColumnIndex,
+      sortAscending: _sortAsc,
+      columns: [
+        DataColumn(
+          label: const Text('Сокращенное наименование'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        const DataColumn(label: Text('На обслуживании')),
+        DataColumn(
+          label: const Text('Форма собственности'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        DataColumn(
+          label: const Text('Наименование'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        DataColumn(
+          label: const Text('ИНН'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        DataColumn(
+          label: const Text('Сист. налогообл.'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        DataColumn(
+          label: const Text('Создан'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        DataColumn(
+          label: const Text('Обновлён'),
+          onSort: (i, asc) => setState(() {
+            _sortColumnIndex = i;
+            _sortAsc = asc;
+          }),
+        ),
+        const DataColumn(label: Center(child: Icon(Icons.more_horiz))),
+      ],
+      initialColumnWidths: const [
+        180.0,
+        180.0,
+        180.0,
+        250.0,
+        150.0,
+        200.0,
+        120.0,
+        120.0,
+        60.0,
+      ],
+      rows: data
+          .map(
+            (c) => DataRow(
+              onSelectChanged: (_) => widget.onOpen(c),
+              cells: [
+                DataCell(
+                  Text(
+                    c.shortName ?? '-',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                DataCell(
+                  Tooltip(
+                    message:
+                        c.onService ? 'На обслуживании' : 'Не на обслуживании',
+                    waitDuration: const Duration(milliseconds: 500),
+                    child: SizedBox(
+                      width: 80,
+                      height: 32,
+                      child: Center(
+                        child: Icon(
+                          c.onService
+                              ? Icons.check_outlined
+                              : Icons.cancel_outlined,
+                          color: c.onService
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).disabledColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    c.ownershipForm ?? '-',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                DataCell(
+                  Text(c.name, overflow: TextOverflow.ellipsis),
+                ),
+                DataCell(Text(c.inn ?? '-')),
+                DataCell(
+                  Text(
+                    c.taxSystems.isNotEmpty ? c.taxSystems.join(', ') : '-',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                DataCell(Text(_formatDate(c.creationDate))),
+                DataCell(Text(_formatDate(c.updatedAt))),
+                DataCell(
+                  Align(
+                    alignment: Alignment.center,
+                    child: IconButton(
+                      icon: const Icon(Icons.remove_red_eye),
+                      tooltip: 'Подробнее',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 40,
+                        height: 40,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => widget.onOpen(c),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+          .toList(),
+    );
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: SelectionArea(
-        child: ResizableDataTable(
-          prefsKey: 'clients_table_column_widths',
-          sortColumnIndex: _sortColumnIndex,
-          sortAscending: _sortAsc,
-          columns: [
-            DataColumn(
-              label: const Text('Сокращенное наименование'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            const DataColumn(label: Text('На обслуживании')),
-            DataColumn(
-              label: const Text('Форма собственности'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            DataColumn(
-              label: const Text('Наименование'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            DataColumn(
-              label: const Text('ИНН'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            DataColumn(
-              label: const Text('Сист. налогообл.'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            DataColumn(
-              label: const Text('Создан'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            DataColumn(
-              label: const Text('Обновлён'),
-              onSort: (i, asc) => setState(() {
-                _sortColumnIndex = i;
-                _sortAsc = asc;
-              }),
-            ),
-            const DataColumn(label: Text('Действия')),
-          ],
-          initialColumnWidths: const [
-            180.0,
-            180.0,
-            180.0,
-            250.0,
-            150.0,
-            200.0,
-            120.0,
-            120.0,
-            160.0,
-          ],
-          rows: data
-              .map(
-                (c) => DataRow(
-                  onSelectChanged: (_) => widget.onOpen(c),
-                  cells: [
-                    DataCell(
-                      Text(
-                        c.shortName ?? '-',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    DataCell(
-                      Tooltip(
-                        message: c.onService
-                            ? 'На обслуживании'
-                            : 'Не на обслуживании',
-                        waitDuration: const Duration(milliseconds: 500),
-                        child: SizedBox(
-                          width: 80,
-                          height: 32,
-                          child: Center(
-                            child: Icon(
-                              c.onService
-                                  ? Icons.check_outlined
-                                  : Icons.cancel_outlined,
-                              color: c.onService
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).disabledColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        c.ownershipForm ?? '-',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    DataCell(
-                      Text(c.name, overflow: TextOverflow.ellipsis),
-                    ),
-                    DataCell(Text(c.inn ?? '-')),
-                    DataCell(
-                      Text(
-                        c.taxSystems.isNotEmpty
-                            ? c.taxSystems.join(', ')
-                            : '-',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    DataCell(Text(_formatDate(c.creationDate))),
-                    DataCell(Text(_formatDate(c.updatedAt))),
-                    DataCell(
-                      Align(
-                        alignment: Alignment.center,
-                        child: IconButton(
-                          icon: const Icon(Icons.remove_red_eye),
-                          tooltip: 'Подробнее',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 40,
-                            height: 40,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => widget.onOpen(c),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .toList(),
-        ),
-      ),
+      child: enableSelection ? SelectionArea(child: table) : table,
     );
   }
 }

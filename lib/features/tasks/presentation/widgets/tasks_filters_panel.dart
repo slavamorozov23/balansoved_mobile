@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:balansoved_mobile/features/clients/domain/entities/client_entity.dart';
 import 'package:balansoved_mobile/features/tasks/domain/entities/task_entity.dart';
 
-class TasksFiltersPanel extends StatefulWidget {
+class TasksFiltersPanel extends StatelessWidget {
   final TaskRequestParams params;
   final List<ClientEntity> clients;
   final bool clientsLoading;
@@ -17,38 +17,18 @@ class TasksFiltersPanel extends StatefulWidget {
   });
 
   @override
-  State<TasksFiltersPanel> createState() => _TasksFiltersPanelState();
-}
-
-class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
-  bool _isExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(child: _buildViewTypeSwitch()),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => setState(() => _isExpanded = !_isExpanded),
-                  icon: Icon(
-                    _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  ),
-                  tooltip: _isExpanded ? 'Свернуть' : 'Развернуть',
-                ),
-              ],
-            ),
-          ),
-          if (_isExpanded) _buildExpandedBody(context),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildViewTypeSwitch(),
+        const SizedBox(height: 12),
+        _buildClientSelector(context),
+        if (params.viewType == TaskViewType.dated) ...[
+          const SizedBox(height: 12),
+          _buildDatedControls(context),
         ],
-      ),
+      ],
     );
   }
 
@@ -56,12 +36,16 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
     final supportedViewTypes = <TaskViewType>{
       TaskViewType.timeless,
       TaskViewType.dated,
-      TaskViewType.all,
+      TaskViewType.timeline,
     };
+    final normalized =
+        params.viewType == TaskViewType.all
+            ? TaskViewType.timeline
+            : params.viewType;
     final selectedType =
-        supportedViewTypes.contains(widget.params.viewType)
-            ? widget.params.viewType
-            : TaskViewType.all;
+        supportedViewTypes.contains(normalized)
+            ? normalized
+            : TaskViewType.timeline;
 
     return DropdownButtonFormField<TaskViewType>(
       value: selectedType,
@@ -92,7 +76,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
           ),
         ),
         DropdownMenuItem(
-          value: TaskViewType.all,
+          value: TaskViewType.timeline,
           child: Row(
             children: [
               Icon(Icons.list_alt, size: 18),
@@ -104,13 +88,13 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
       ],
       onChanged: (value) {
         if (value == null || value == selectedType) return;
-        widget.onParamsChanged(_buildParamsForViewType(value));
+        onParamsChanged(_buildParamsForViewType(value));
       },
     );
   }
 
   TaskRequestParams _buildParamsForViewType(TaskViewType viewType) {
-    final base = widget.params;
+    final base = params;
     final now = DateTime.now();
 
     switch (viewType) {
@@ -155,29 +139,13 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
           participantsMode: base.participantsMode,
           roleFilter: base.roleFilter ?? 'any',
           force: true,
-        );
+        ).copyWith(onlyMy: base.onlyMy);
     }
   }
 
-  Widget _buildExpandedBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildClientSelector(context),
-          if (widget.params.viewType == TaskViewType.dated) ...[
-            const SizedBox(height: 16),
-            _buildDatedControls(context),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildClientSelector(BuildContext context) {
-    final clientsById = {for (final c in widget.clients) c.id: c};
-    final selectedId = widget.params.clientId;
+    final clientsById = {for (final c in clients) c.id: c};
+    final selectedId = params.clientId;
 
     String labelForClient(ClientEntity client) {
       final inn = (client.inn ?? '').trim();
@@ -191,19 +159,30 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
         : 'Клиент: $selectedId';
 
     return InkWell(
-      onTap: widget.clientsLoading
+      onTap: clientsLoading
           ? null
           : () async {
               final selected = await _selectClientBottomSheet(
                 context,
-                clients: widget.clients,
+                clients: clients,
                 selectedClientId: selectedId,
               );
               if (!context.mounted) return;
               if (selected == selectedId) return;
-              widget.onParamsChanged(
-                widget.params.copyWith(clientId: selected, force: true),
-              );
+              if (params.viewType == TaskViewType.timeline) {
+                onParamsChanged(
+                  params.copyWith(
+                    clientId: selected,
+                    direction: 'initial',
+                    cursorAt: null,
+                    force: true,
+                  ),
+                );
+              } else {
+                onParamsChanged(
+                  params.copyWith(clientId: selected, force: true),
+                );
+              }
             },
       borderRadius: BorderRadius.circular(8),
       child: InputDecorator(
@@ -211,7 +190,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
           labelText: 'Клиент',
           border: const OutlineInputBorder(),
           isDense: true,
-          enabled: !widget.clientsLoading,
+          enabled: !clientsLoading,
           suffixIcon: const Icon(Icons.expand_more),
         ),
         child: Text(
@@ -253,7 +232,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
   }
 
   Widget _buildDatedControls(BuildContext context) {
-    final params = widget.params;
+    final params = this.params;
     final now = DateTime.now();
     final selectedDate = DateTime(
       params.year ?? now.year,
@@ -269,7 +248,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
           onChanged: (value) {
             if (value == false) {
               final current = DateTime.now();
-              widget.onParamsChanged(
+              onParamsChanged(
                 params.copyWith(
                   filterByMonth: false,
                   month: current.month,
@@ -278,7 +257,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
                 ),
               );
             } else {
-              widget.onParamsChanged(
+              onParamsChanged(
                 params.copyWith(filterByMonth: true, force: true),
               );
             }
@@ -296,7 +275,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
                     selectedDate.year,
                     selectedDate.month - 1,
                   );
-                  widget.onParamsChanged(
+                  onParamsChanged(
                     params.copyWith(
                       month: newDate.month,
                       year: newDate.year,
@@ -331,7 +310,7 @@ class _TasksFiltersPanelState extends State<TasksFiltersPanel> {
                     selectedDate.year,
                     selectedDate.month + 1,
                   );
-                  widget.onParamsChanged(
+                  onParamsChanged(
                     params.copyWith(
                       month: newDate.month,
                       year: newDate.year,

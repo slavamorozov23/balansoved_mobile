@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,7 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _kCellPadding = EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0);
 const _kHeaderPadding = EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0);
 const _kBorderRadius8 = BorderRadius.all(Radius.circular(8));
-const _kScrollbarHeight = 14.0;
+const _kScrollbarHeight = 18.0;
+const _kHeaderHeight = 48.0;
+const _kScrollbarThickness = 12.0;
+const _kColumnSeparatorWidthMouse = 4.0;
+const _kColumnSeparatorWidthTouch = 18.0;
+const _kResizeIndicatorWidth = 1.0;
 
 /// Таблица с изменяемой шириной колонок и сохранением размеров в prefs.
 class ResizableDataTable extends StatefulWidget {
@@ -121,7 +127,7 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
     super.dispose();
   }
 
-  Widget _buildHeader(List<double> effectiveColumnWidths) {
+  Widget _buildHeader(List<double> effectiveColumnWidths, double separatorWidth) {
     final theme = Theme.of(context);
     final headerBgColor =
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
@@ -141,29 +147,31 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
         children: List.generate(widget.columns.length * 2 - 1, (index) {
           if (index.isOdd) {
             final columnIndex = index ~/ 2;
-            return GestureDetector(
-              onPanStart: (_) {
-                _resizingColumnIndex = columnIndex;
-              },
-              onPanUpdate: (details) {
-                _updateColumnWidth(columnIndex, details.delta.dx);
-              },
-              onPanEnd: (_) {
-                _resizingColumnIndex = null;
-                _saveColumnWidths();
-              },
-              child: MouseRegion(
-                cursor: SystemMouseCursors.resizeColumn,
-                child: Container(
-                  width: 4,
-                  height: 48,
-                  color: Colors.transparent,
-                  child: Center(
-                    child: Container(
-                      width: widget.borderWidth,
-                      color: _resizingColumnIndex == columnIndex
-                          ? theme.colorScheme.primary
-                          : theme.dividerColor,
+            return SelectionContainer.disabled(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: (_) {
+                  _resizingColumnIndex = columnIndex;
+                },
+                onHorizontalDragUpdate: (details) {
+                  _updateColumnWidth(columnIndex, details.delta.dx);
+                },
+                onHorizontalDragEnd: (_) {
+                  _resizingColumnIndex = null;
+                  _saveColumnWidths();
+                },
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.resizeColumn,
+                  child: SizedBox(
+                    width: separatorWidth,
+                    height: _kHeaderHeight,
+                    child: Center(
+                      child: Container(
+                        width: _kResizeIndicatorWidth,
+                        color: _resizingColumnIndex == columnIndex
+                            ? theme.colorScheme.primary
+                            : theme.dividerColor,
+                      ),
                     ),
                   ),
                 ),
@@ -175,7 +183,7 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
           final column = widget.columns[columnIndex];
           return Container(
             width: effectiveColumnWidths[columnIndex],
-            height: 48,
+            height: _kHeaderHeight,
             padding: _kHeaderPadding,
             alignment: Alignment.centerLeft,
             child: InkWell(
@@ -211,6 +219,7 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
     DataRow row,
     int rowIndex,
     List<double> effectiveColumnWidths,
+    double separatorWidth,
   ) {
     final theme = Theme.of(context);
     final isEven = rowIndex.isEven;
@@ -218,6 +227,11 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
         ? theme.colorScheme.surface
         : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.05);
     final borderColor = theme.dividerColor.withValues(alpha: 0.2);
+    final totalWidth =
+        (effectiveColumnWidths.isNotEmpty
+            ? effectiveColumnWidths.reduce((a, b) => a + b)
+            : 0.0) +
+        (widget.columns.length - 1) * separatorWidth;
 
     return Container(
       decoration: BoxDecoration(
@@ -235,25 +249,64 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
           onTap: row.onSelectChanged != null
               ? () => row.onSelectChanged!(true)
               : null,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: List.generate(widget.columns.length * 2 - 1, (index) {
-              if (index.isOdd) {
-                return const SizedBox(width: 4);
-              }
-              final columnIndex = index ~/ 2;
-              return Container(
-                width: effectiveColumnWidths[columnIndex],
-                constraints: const BoxConstraints(minHeight: 44),
-                padding: _kCellPadding,
-                alignment: Alignment.centerLeft,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: row.cells[columnIndex].child,
-                ),
-              );
-            }),
-          ),
+          child:
+              row.cells.length == 1
+                  ? SizedBox(
+                    width: totalWidth,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      child: Padding(
+                        padding: _kCellPadding,
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: AnimatedBuilder(
+                            animation: _horizontalScrollController,
+                            builder: (context, child) {
+                              final offset =
+                                  _horizontalScrollController.hasClients
+                                      ? _horizontalScrollController.offset
+                                      : 0.0;
+                              return Transform.translate(
+                                offset: Offset(offset, 0),
+                                child: child,
+                              );
+                            },
+                            child: row.cells.first.child,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(
+                      widget.columns.length * 2 - 1,
+                      (index) {
+                        if (index.isOdd) {
+                          return SizedBox(width: separatorWidth);
+                        }
+                        final columnIndex = index ~/ 2;
+                        final isLastColumn =
+                            columnIndex == widget.columns.length - 1;
+                        return Container(
+                          width: effectiveColumnWidths[columnIndex],
+                          constraints: const BoxConstraints(minHeight: 44),
+                          padding:
+                              isLastColumn
+                                  ? const EdgeInsets.symmetric(
+                                    horizontal: 6.0,
+                                    vertical: 4.0,
+                                  )
+                                  : _kCellPadding,
+                          alignment: Alignment.topLeft,
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: row.cells[columnIndex].child,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
         ),
       ),
     );
@@ -267,9 +320,15 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isTouchPlatform =
+            !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS);
+        final separatorWidth =
+            isTouchPlatform ? _kColumnSeparatorWidthTouch : _kColumnSeparatorWidthMouse;
         final hasBoundedHeight = constraints.maxHeight.isFinite;
+        final verticalScrollbarLane = hasBoundedHeight ? _kScrollbarHeight : 0.0;
 
-        const separatorWidth = 4.0;
         final separatorCount = widget.columns.length - 1;
 
         final baseContentWidth = _columnWidths.isNotEmpty
@@ -283,7 +342,8 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
         }
 
         final borderOffset = widget.borderWidth * 2;
-        final availableForContent = availableWidth - borderOffset;
+        final availableForContent = (availableWidth - borderOffset - verticalScrollbarLane)
+            .clamp(0.0, double.infinity);
         final needsHorizontalScroll = baseTotalWidth > availableForContent;
 
         final shouldExpandHorizontally =
@@ -312,53 +372,29 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
                     : 0.0) +
                 separatorCount * separatorWidth;
 
-        Widget buildTableBody() {
-          final bottomPadding =
-              needsHorizontalScroll && widget.showFloatingHorizontalScrollbar
-                  ? _kScrollbarHeight + 4.0
-                  : 0.0;
+        final horizontalScrollbarLane =
+            needsHorizontalScroll && widget.showFloatingHorizontalScrollbar
+                ? _kScrollbarHeight
+                : 0.0;
 
+        Widget buildTableBody() {
           if (hasBoundedHeight) {
             return Column(
               children: [
-                _buildHeader(effectiveColumnWidths),
+                _buildHeader(effectiveColumnWidths, separatorWidth),
                 Expanded(
-                  child: ScrollbarTheme(
-                    data: ScrollbarThemeData(
-                      thumbColor: WidgetStateProperty.all(
-                        Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.4),
-                      ),
-                      trackColor: WidgetStateProperty.all(
-                        Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.1),
-                      ),
-                      radius: const Radius.circular(4),
-                      thickness: WidgetStateProperty.all(8.0),
-                    ),
-                    child: Scrollbar(
-                      controller: _verticalScrollController,
-                      thumbVisibility: true,
-                      trackVisibility: true,
-                      child: ListView.builder(
-                        controller: _verticalScrollController,
-                        padding: EdgeInsets.only(
-                          bottom: bottomPadding,
-                        ),
-                        itemCount: widget.rows.length,
-                        itemBuilder: (context, index) {
-                          return _buildRow(
-                            widget.rows[index],
-                            index,
-                            effectiveColumnWidths,
-                          );
-                        },
-                      ),
-                    ),
+                  child: ListView.builder(
+                    controller: _verticalScrollController,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    itemCount: widget.rows.length,
+                    itemBuilder: (context, index) {
+                      return _buildRow(
+                        widget.rows[index],
+                        index,
+                        effectiveColumnWidths,
+                        separatorWidth,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -368,69 +404,82 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildHeader(effectiveColumnWidths),
+              _buildHeader(effectiveColumnWidths, separatorWidth),
               ...widget.rows.asMap().entries.map((entry) {
-                return _buildRow(entry.value, entry.key, effectiveColumnWidths);
+                return _buildRow(
+                  entry.value,
+                  entry.key,
+                  effectiveColumnWidths,
+                  separatorWidth,
+                );
               }),
-              if (bottomPadding > 0) SizedBox(height: bottomPadding),
             ],
           );
         }
 
-        final tableContent = hasBoundedHeight
-            ? SizedBox(
-                width: effectiveTotalWidth,
-                height: constraints.maxHeight,
-                child: buildTableBody(),
-              )
-            : SizedBox(
-                width: effectiveTotalWidth,
-                child: buildTableBody(),
-              );
-
         final theme = Theme.of(context);
+        final scrollbarThemeData = ScrollbarThemeData(
+          thumbColor: WidgetStateProperty.all(
+            theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+          trackColor: WidgetStateProperty.all(
+            theme.colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
+          radius: const Radius.circular(4),
+          thickness: WidgetStateProperty.all(_kScrollbarThickness),
+        );
 
-        if (!needsHorizontalScroll) {
-          return RepaintBoundary(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: _kBorderRadius8,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: tableContent,
+        final tableBody = buildTableBody();
+        Widget tableViewport = SizedBox(width: effectiveTotalWidth, child: tableBody);
+
+        if (needsHorizontalScroll) {
+          tableViewport = SingleChildScrollView(
+            controller: _horizontalScrollController,
+            scrollDirection: Axis.horizontal,
+            child: tableViewport,
+          );
+        }
+
+        Widget content = tableViewport;
+
+        if (horizontalScrollbarLane > 0) {
+          content = RawScrollbar(
+            controller: _horizontalScrollController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            padding: EdgeInsets.zero,
+            mainAxisMargin: 0,
+            crossAxisMargin: 0,
+            thickness: _kScrollbarThickness,
+            radius: const Radius.circular(4),
+            scrollbarOrientation: ScrollbarOrientation.bottom,
+            notificationPredicate:
+                (notification) => notification.metrics.axis == Axis.horizontal,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: horizontalScrollbarLane),
+              child: content,
             ),
           );
         }
 
-        final horizontalScrollView = SingleChildScrollView(
-          controller: _horizontalScrollController,
-          scrollDirection: Axis.horizontal,
-          child: tableContent,
-        );
-
-        final horizontalContent =
-            widget.showFloatingHorizontalScrollbar
-                ? ScrollbarTheme(
-                    data: ScrollbarThemeData(
-                      thumbColor: WidgetStateProperty.all(
-                        theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                      ),
-                      trackColor: WidgetStateProperty.all(
-                        theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                      ),
-                      radius: const Radius.circular(4),
-                      thickness: WidgetStateProperty.all(8.0),
-                    ),
-                    child: Scrollbar(
-                      controller: _horizontalScrollController,
-                      thumbVisibility: true,
-                      trackVisibility: true,
-                      scrollbarOrientation: ScrollbarOrientation.bottom,
-                      child: horizontalScrollView,
-                    ),
-                  )
-                : horizontalScrollView;
+        if (verticalScrollbarLane > 0) {
+          content = RawScrollbar(
+            controller: _verticalScrollController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            padding: EdgeInsets.zero,
+            mainAxisMargin: 0,
+            crossAxisMargin: 0,
+            thickness: _kScrollbarThickness,
+            radius: const Radius.circular(4),
+            notificationPredicate:
+                (notification) => notification.metrics.axis == Axis.vertical,
+            child: Padding(
+              padding: EdgeInsets.only(right: verticalScrollbarLane),
+              child: content,
+            ),
+          );
+        }
 
         return RepaintBoundary(
           child: Container(
@@ -439,7 +488,7 @@ class _ResizableDataTableState extends State<ResizableDataTable> {
               borderRadius: _kBorderRadius8,
             ),
             clipBehavior: Clip.antiAlias,
-            child: horizontalContent,
+            child: ScrollbarTheme(data: scrollbarThemeData, child: content),
           ),
         );
       },

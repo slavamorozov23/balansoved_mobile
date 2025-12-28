@@ -1,0 +1,4 @@
+# This project explicitly tracks the Android keystore folder (requested).
+# Note: normally keystores and key.properties should NOT be committed.
+!*
+
