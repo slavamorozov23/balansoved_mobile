@@ -159,12 +159,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
 
           if (state is NotificationsLoaded || state is NotificationsLoadingMore) {
-            final notifications =
-                state is NotificationsLoaded
-                    ? state.notifications
-                    : (state as NotificationsLoadingMore).notifications;
             final unread =
-                notifications.where((n) => !n.isDelivered).toList();
+                state is NotificationsLoaded
+                    ? state.unreadNotifications
+                    : (state as NotificationsLoadingMore).unreadNotifications;
 
             if (unread.isEmpty) {
               return Center(

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:balansoved_mobile/features/clients/presentation/cubit/clients_cubit.dart';
 import 'package:balansoved_mobile/features/clients/presentation/widgets/clients_table.dart';
 import 'package:balansoved_mobile/features/firms/presentation/cubit/firms_cubit.dart';
+import 'package:balansoved_mobile/presentation/widgets/cat_loader.dart';
 import 'package:balansoved_mobile/router.dart';
 
 @RoutePage()
@@ -15,7 +16,7 @@ class ClientsPage extends StatelessWidget {
     return BlocBuilder<FirmsCubit, FirmsState>(
       builder: (context, firmState) {
         if (firmState.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const CatLoadingView();
         }
         if (firmState.selectedFirm == null) {
           return const Center(child: Text('Фирма не выбрана'));
@@ -24,7 +25,7 @@ class ClientsPage extends StatelessWidget {
         return BlocBuilder<ClientsCubit, ClientsState>(
           builder: (context, state) {
             if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const CatLoadingView();
             }
             if (state.noAccess) {
               return const Center(

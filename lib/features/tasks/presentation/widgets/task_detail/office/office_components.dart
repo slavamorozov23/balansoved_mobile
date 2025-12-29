@@ -27,30 +27,38 @@ class OfficeBulletLine extends StatelessWidget {
   final IconData icon;
   final Color accentColor;
   final String text;
+  final TextStyle? textStyle;
+  final Widget? leading;
 
   const OfficeBulletLine({
     super.key,
     required this.icon,
     required this.accentColor,
     required this.text,
+    this.textStyle,
+    this.leading,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textStyle = TextStyle(
+    final defaultStyle = TextStyle(
       color: TaskStyles.textPrimary(colorScheme),
       fontWeight: FontWeight.w600,
       fontSize: 13,
       height: 1.35,
     );
+    final valueStyle = textStyle ?? defaultStyle;
+    final leadingWidget =
+        leading ??
+        Icon(icon, size: 16, color: accentColor.withValues(alpha: 0.8));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: accentColor.withValues(alpha: 0.8)),
+        leadingWidget,
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: textStyle)),
+        Expanded(child: Text(text, style: valueStyle)),
       ],
     ).padding(bottom: 6);
   }
@@ -166,11 +174,17 @@ class OfficeDateValue extends StatelessWidget {
 class OfficeClockDateTimeValue extends StatelessWidget {
   final DateTime? date;
   final Color accentColor;
+  final TextStyle? timeTextStyle;
+  final TextStyle? dateTextStyle;
+  final TextStyle? centerLabelStyle;
 
   const OfficeClockDateTimeValue({
     super.key,
     required this.date,
     required this.accentColor,
+    this.timeTextStyle,
+    this.dateTextStyle,
+    this.centerLabelStyle,
   });
 
   @override
@@ -196,6 +210,23 @@ class OfficeClockDateTimeValue extends StatelessWidget {
         colorScheme.surfaceContainerLowest;
     final centerLabelBg = Color.alphaBlend(fill, clockBase);
 
+    final defaultTimeStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w900,
+      color: TaskStyles.textPrimary(colorScheme),
+    );
+    final defaultDateStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w800,
+      color: TaskStyles.textBody(colorScheme),
+    );
+    final defaultCenterStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0.2,
+      color: accentColor,
+    );
+
     return Row(
       children: [
         Expanded(
@@ -204,20 +235,12 @@ class OfficeClockDateTimeValue extends StatelessWidget {
             children: [
               Text(
                 timeText,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: TaskStyles.textPrimary(colorScheme),
-                ),
+                style: timeTextStyle ?? defaultTimeStyle,
               ),
               const SizedBox(height: 2),
               Text(
                 fullDateText,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: TaskStyles.textBody(colorScheme),
-                ),
+                style: dateTextStyle ?? defaultDateStyle,
               ),
             ],
           ),
@@ -250,12 +273,7 @@ class OfficeClockDateTimeValue extends StatelessWidget {
               Text(
                 dayMonthText,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.2,
-                  color: accentColor,
-                ),
+                style: centerLabelStyle ?? defaultCenterStyle,
               ),
             ],
           ),

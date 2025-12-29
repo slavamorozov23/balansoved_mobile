@@ -23,6 +23,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   List<NotificationEntity> _allNotifications = [];
+  List<NotificationEntity> _unreadNotifications = [];
   int _currentPage = 0;
   bool _hasMoreNotifications = true;
   int _undeliveredCount = 0;
@@ -50,6 +51,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   void _resetState() {
     _allNotifications = [];
+    _unreadNotifications = [];
     _currentPage = 0;
     _hasMoreNotifications = true;
     _undeliveredCount = 0;
@@ -73,7 +75,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     if (_currentPage == 0) {
       emit(NotificationsLoading());
     } else {
-      emit(NotificationsLoadingMore(_allNotifications, _undeliveredCount));
+      emit(
+        NotificationsLoadingMore(
+          _allNotifications,
+          _unreadNotifications,
+          _undeliveredCount,
+        ),
+      );
     }
 
     final result = await getNotifications(
@@ -90,13 +98,19 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
         _allNotifications.addAll(notifications);
         _currentPage++;
+        _rebuildUnread();
 
         if (_currentPage == 1) {
-          _undeliveredCount =
-              notifications.where((n) => !n.isDelivered).length;
+          _undeliveredCount = _unreadNotifications.length;
         }
 
-        emit(NotificationsLoaded(_allNotifications, _undeliveredCount));
+        emit(
+          NotificationsLoaded(
+            _allNotifications,
+            _unreadNotifications,
+            _undeliveredCount,
+          ),
+        );
       },
     );
   }
@@ -129,10 +143,16 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               return notification;
             }).toList();
 
-        _undeliveredCount =
-            _allNotifications.where((n) => !n.isDelivered).length;
+        _rebuildUnread();
+        _undeliveredCount = _unreadNotifications.length;
 
-        emit(NotificationsLoaded(_allNotifications, _undeliveredCount));
+        emit(
+          NotificationsLoaded(
+            _allNotifications,
+            _unreadNotifications,
+            _undeliveredCount,
+          ),
+        );
       },
     );
   }
@@ -146,5 +166,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     if (undeliveredIds.isNotEmpty) {
       await markNotificationsAsDelivered(undeliveredIds);
     }
+  }
+
+  void _rebuildUnread() {
+    _unreadNotifications =
+        _allNotifications.where((n) => !n.isDelivered).toList();
   }
 }

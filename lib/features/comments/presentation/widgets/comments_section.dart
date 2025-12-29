@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:styled_widget/styled_widget.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:balansoved_mobile/injection_container.dart';
 import 'package:balansoved_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:balansoved_mobile/features/employees/presentation/cubit/employees_cubit.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/widgets/task_detail/task_styles.dart';
+import 'package:balansoved_mobile/presentation/widgets/cat_loader.dart';
 import '../../domain/entities/comment_entity.dart';
 import '../cubit/comments_cubit.dart';
 import '../cubit/comments_state.dart';
@@ -40,6 +42,8 @@ class CommentsSection extends StatefulWidget {
 class _CommentsSectionState extends State<CommentsSection> with SingleTickerProviderStateMixin {
   late final CommentsCubit _commentsCubit;
   String? _currentUserId;
+  bool _isVisible = false;
+  bool _hasRequestedLoad = false;
   
   /// Ключи для скролла к комментариям по ID
   final Map<String, GlobalKey> _commentKeys = {};
@@ -79,18 +83,17 @@ class _CommentsSectionState extends State<CommentsSection> with SingleTickerProv
     if (authState is AuthAuthenticated) {
       _currentUserId = authState.user.id;
     }
-    
-    _ensureEmployeesLoaded();
-    // Загружаем комментарии сразу
-    _loadComments();
   }
 
   @override
   void didUpdateWidget(CommentsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.taskId != oldWidget.taskId || widget.firmId != oldWidget.firmId) {
-      _ensureEmployeesLoaded();
-      _loadComments();
+      _commentsCubit.reset();
+      _hasRequestedLoad = false;
+      if (_isVisible) {
+        _triggerLoad();
+      }
     }
   }
 
@@ -106,6 +109,22 @@ class _CommentsSectionState extends State<CommentsSection> with SingleTickerProv
       firmId: widget.firmId,
       taskId: widget.taskId,
     );
+  }
+
+  void _triggerLoad() {
+    if (_hasRequestedLoad) return;
+    _hasRequestedLoad = true;
+    _ensureEmployeesLoaded();
+    _loadComments();
+  }
+
+  void _onVisibilityChanged(VisibilityInfo info) {
+    final isVisible = info.visibleFraction > 0.12;
+    if (_isVisible == isVisible) return;
+    _isVisible = isVisible;
+    if (_isVisible) {
+      _triggerLoad();
+    }
   }
 
   void _ensureEmployeesLoaded() {
@@ -177,102 +196,113 @@ class _CommentsSectionState extends State<CommentsSection> with SingleTickerProv
     final accentFgColor = TaskStyles.accentForegroundColor(colorScheme);
     final employeesState = context.watch<EmployeesCubit>().state;
 
-    return BlocProvider.value(
-      value: _commentsCubit,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Заголовок секции
-          Row(
-            children: [
-              Icon(
-                Icons.comment_outlined,
-                color: accentFgColor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Комментарии',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+    return VisibilityDetector(
+      key: ValueKey('comments_section_${widget.firmId}_${widget.taskId}'),
+      onVisibilityChanged: _onVisibilityChanged,
+      child: BlocProvider.value(
+        value: _commentsCubit,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Заголовок секции
+            Row(
+              children: [
+                Icon(
+                  Icons.comment_outlined,
                   color: accentFgColor,
+                  size: 20,
                 ),
-              ),
-              const Spacer(),
-              BlocBuilder<CommentsCubit, CommentsState>(
-                bloc: _commentsCubit,
-                builder: (context, state) {
-                  if (state is CommentsLoaded) {
-                    return Text(
-                      '${state.comments.length}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ],
-          ).padding(horizontal: 16, vertical: 12),
-          
-          // Разделитель
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: colorScheme.outlineVariant,
-          ),
-          
-          // Контент секции
-          BlocBuilder<CommentsCubit, CommentsState>(
-            bloc: _commentsCubit,
-            builder: (context, state) {
-              if (state is CommentsLoading) {
-                return const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              
-              if (state is CommentsError) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: colorScheme.error,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          state.message,
-                          style: TextStyle(color: colorScheme.error),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: _loadComments,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Повторить'),
-                        ),
-                      ],
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  'Комментарии',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: accentFgColor,
                   ),
-                );
-              }
-              
-              if (state is CommentsLoaded) {
-                return _buildCommentsContent(state, employeesState);
-              }
-              
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ).padding(top: 24),
+                ),
+                const Spacer(),
+                BlocBuilder<CommentsCubit, CommentsState>(
+                  bloc: _commentsCubit,
+                  builder: (context, state) {
+                    if (state is CommentsLoaded) {
+                      return Text(
+                        '${state.comments.length}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ).padding(horizontal: 16, vertical: 12),
+
+            // Разделитель
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: colorScheme.outlineVariant,
+            ),
+
+            // Контент секции
+            BlocBuilder<CommentsCubit, CommentsState>(
+              bloc: _commentsCubit,
+              builder: (context, state) {
+                if (state is CommentsLoading) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(
+                      child: CatLoadingView(
+                        sizeFactor: 0.32,
+                        minSize: 120,
+                        maxSize: 200,
+                        frames: commentCatFrames,
+                      ),
+                    ),
+                  );
+                }
+
+                if (state is CommentsError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: colorScheme.error,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            state.message,
+                            style: TextStyle(color: colorScheme.error),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _loadComments,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Повторить'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (state is CommentsLoaded) {
+                  return _buildCommentsContent(state, employeesState);
+                }
+
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ).padding(top: 24),
+      ),
     );
   }
 

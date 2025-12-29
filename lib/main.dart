@@ -15,6 +15,8 @@ import 'package:balansoved_mobile/features/employees/presentation/cubit/employee
 import 'package:balansoved_mobile/features/firms/presentation/cubit/firms_cubit.dart';
 import 'package:balansoved_mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:balansoved_mobile/features/rustore_notifications/presentation/cubit/rustore_notifications_cubit.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/presentation/cubit/file_download_cubit.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/presentation/cubit/tariffs_and_storage_cubit.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_cubit.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_chrome_cubit.dart';
 
@@ -58,6 +60,12 @@ class MainApp extends StatelessWidget {
         BlocProvider<TasksChromeCubit>(create: (_) => TasksChromeCubit()),
         BlocProvider<NotificationsCubit>.value(
           value: di.sl<NotificationsCubit>(),
+        ),
+        BlocProvider<TariffsAndStorageCubit>.value(
+          value: di.sl<TariffsAndStorageCubit>(),
+        ),
+        BlocProvider<FileDownloadCubit>.value(
+          value: di.sl<FileDownloadCubit>(),
         ),
         BlocProvider<RustoreNotificationsCubit>(
           create: (_) => di.sl<RustoreNotificationsCubit>(),

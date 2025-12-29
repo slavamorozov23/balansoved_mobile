@@ -3,6 +3,14 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Разрешение для уведомлений на Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Разрешения для доступа к файлам при скачивании -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 
     <application
         android:label="Balansoved"

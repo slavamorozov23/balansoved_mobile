@@ -4,8 +4,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:balansoved_mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:balansoved_mobile/router.dart';
 
-class NotificationsButton extends StatelessWidget {
+class NotificationsButton extends StatefulWidget {
   const NotificationsButton({super.key});
+
+  @override
+  State<NotificationsButton> createState() => _NotificationsButtonState();
+}
+
+class _NotificationsButtonState extends State<NotificationsButton> {
+  bool _isNavigating = false;
+
+  Future<void> _openNotifications(BuildContext context) async {
+    if (_isNavigating) return;
+    setState(() => _isNavigating = true);
+    await context.router.push(const NotificationsRoute());
+    if (!mounted) return;
+    setState(() => _isNavigating = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +31,7 @@ class NotificationsButton extends StatelessWidget {
       builder: (context, state) {
         final isLoading =
             state is NotificationsLoading || state is NotificationsInitial;
+        final showSpinner = isLoading || _isNavigating;
         int undeliveredCount = 0;
         if (state is NotificationsLoaded) {
           undeliveredCount = state.undeliveredCount;
@@ -28,14 +44,9 @@ class NotificationsButton extends StatelessWidget {
           child: Stack(
             children: [
               IconButton(
-                onPressed:
-                    isLoading
-                        ? null
-                        : () => context.router.push(
-                          const NotificationsRoute(),
-                        ),
+                onPressed: () => _openNotifications(context),
                 icon:
-                    isLoading
+                    showSpinner
                         ? SizedBox(
                           width: 18,
                           height: 18,

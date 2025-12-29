@@ -13,22 +13,40 @@ class NotificationsLoading extends NotificationsState {}
 
 class NotificationsLoadingMore extends NotificationsState {
   final List<NotificationEntity> notifications;
+  final List<NotificationEntity> unreadNotifications;
   final int undeliveredCount;
 
-  const NotificationsLoadingMore(this.notifications, this.undeliveredCount);
+  const NotificationsLoadingMore(
+    this.notifications,
+    this.unreadNotifications,
+    this.undeliveredCount,
+  );
 
   @override
-  List<Object?> get props => [notifications, undeliveredCount];
+  List<Object?> get props => [
+        notifications,
+        unreadNotifications,
+        undeliveredCount,
+      ];
 }
 
 class NotificationsLoaded extends NotificationsState {
   final List<NotificationEntity> notifications;
+  final List<NotificationEntity> unreadNotifications;
   final int undeliveredCount;
 
-  const NotificationsLoaded(this.notifications, this.undeliveredCount);
+  const NotificationsLoaded(
+    this.notifications,
+    this.unreadNotifications,
+    this.undeliveredCount,
+  );
 
   @override
-  List<Object?> get props => [notifications, undeliveredCount];
+  List<Object?> get props => [
+        notifications,
+        unreadNotifications,
+        undeliveredCount,
+      ];
 }
 
 class NotificationsError extends NotificationsState {

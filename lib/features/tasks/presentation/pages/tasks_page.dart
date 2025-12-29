@@ -13,6 +13,7 @@ import 'package:balansoved_mobile/features/tasks/presentation/cubit/tasks_chrome
 import 'package:balansoved_mobile/features/tasks/presentation/widgets/tasks_filters_panel.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/widgets/tasks_table.dart';
 import 'package:balansoved_mobile/features/tasks/presentation/widgets/tasks_table_helpers.dart';
+import 'package:balansoved_mobile/presentation/widgets/cat_loader.dart';
 import 'package:balansoved_mobile/router.dart';
 
 class _TaskStatusOption {
@@ -302,7 +303,7 @@ class _TasksPageState extends State<TasksPage> {
     return BlocBuilder<FirmsCubit, FirmsState>(
       builder: (context, firmState) {
         if (firmState.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const CatLoadingView();
         }
         if (firmState.selectedFirm == null) {
           return const Center(child: Text('Фирма не выбрана'));
@@ -467,7 +468,7 @@ class _TasksPageState extends State<TasksPage> {
         (clientsState.clients.isEmpty &&
             clientsState.error == null &&
             !clientsState.noAccess)) {
-      return const Center(child: CircularProgressIndicator());
+      return const CatLoadingView();
     }
     if (tasksState is TasksNoAccess) {
       return Center(child: Text(tasksState.message));

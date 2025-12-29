@@ -19,7 +19,6 @@ dependencies:
   extended_text: ^15.0.2
   extended_text_field: ^16.0.2
   file_picker: ^8.1.6
-  file_saver: ^0.3.0
   font_awesome_flutter: ^10.7.0
   flutter:
     sdk: flutter
@@ -33,11 +32,14 @@ dependencies:
   flutter_svg: ^2.0.17
   get_it: ^8.0.3
   http: ^1.2.2
+  image_gallery_saver_plus: ^4.0.1
   intl: ^0.20.2
   jwt_decoder: ^2.0.1
   logger: ^2.5.0
   mime: ^2.0.0
+  open_filex: ^4.5.0
   package_info_plus: ^8.0.0
+  path_provider: ^2.1.3
   permission_handler: ^12.0.1
   responsive_builder: ^0.7.1
   shared_preferences: ^2.5.3
@@ -50,6 +52,7 @@ dependencies:
   talker_flutter: ^4.9.3
   translit: ^2.0.2
   url_launcher: ^6.2.5
+  visibility_detector: ^0.4.0+2
   web_socket_channel: ^3.0.3
   webview_flutter: ^4.13.0
   xml: ^6.3.0
@@ -70,6 +73,15 @@ flutter:
     - assets/balansoved_white_on_black.png
     - assets/balansoved_white_on_png_BIG.png
     - assets/transparent_background.png
+    - assets/promo/moscot_keys.png
+    - assets/promo/moscot_welcome.png
+    - assets/promo/cat-0.png
+    - assets/promo/cat-1.png
+    - assets/promo/cat-2.png
+    - assets/promo/cat-2-0.png
+    - assets/promo/cat-2-1.png
+    - assets/promo/cat-2-2.png
+    - assets/promo/cat-2-3.png
 
 flutter_icons:
   android: true

@@ -86,6 +86,18 @@ import 'package:balansoved_mobile/features/comments/domain/usecases/create_comme
 import 'package:balansoved_mobile/features/comments/domain/usecases/update_comment_usecase.dart';
 import 'package:balansoved_mobile/features/comments/domain/usecases/delete_comment_usecase.dart';
 import 'package:balansoved_mobile/features/comments/presentation/cubit/comments_cubit.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/data_source/tariffs_and_storage_remote_data_source.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/data_source/file_download_remote_data_source.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/data_source/file_save_local_data_source.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/repositories/file_download_remote_data_source_impl.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/repositories/file_save_local_data_source_impl.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/repositories/tariffs_and_storage_remote_data_source_impl.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/data/repositories/tariffs_and_storage_repository_impl.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/domain/repositories/tariffs_and_storage_repository.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/domain/usecases/download_and_save_file_usecase.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/domain/usecases/download_file_usecase.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/presentation/cubit/file_download_cubit.dart';
+import 'package:balansoved_mobile/features/tariffs_and_storage/presentation/cubit/tariffs_and_storage_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -142,6 +154,7 @@ Future<void> setupLocator() async {
   _registerTasksFeature();
   _registerNotificationsFeature();
   _registerCommentsFeature();
+  _registerTariffsAndStorageFeature();
 
   sl<Talker>().log('[SETUP] Dependencies registered');
 }
@@ -349,6 +362,40 @@ void _registerCommentsFeature() {
 
   sl.registerLazySingleton<CommentsRemoteDataSource>(
     () => CommentsRemoteDataSourceImpl(dio: sl()),
+  );
+}
+
+void _registerTariffsAndStorageFeature() {
+  sl.registerLazySingleton<ITariffsAndStorageRemoteDataSource>(
+    () => TariffsAndStorageRemoteDataSourceImpl(dio: sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<IFileDownloadRemoteDataSource>(
+    () => FileDownloadRemoteDataSourceImpl(client: sl()),
+  );
+
+  sl.registerLazySingleton<IFileSaveLocalDataSource>(
+    () => FileSaveLocalDataSourceImpl(),
+  );
+
+  sl.registerLazySingleton<ITariffsAndStorageRepository>(
+    () => TariffsAndStorageRepositoryImpl(
+      remoteDataSource: sl(),
+      fileDownloadRemoteDataSource: sl(),
+      fileSaveLocalDataSource: sl(),
+      localAuth: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => DownloadFileUseCase(sl()));
+  sl.registerLazySingleton(() => DownloadAndSaveFileUseCase(sl()));
+
+  sl.registerFactory(
+    () => TariffsAndStorageCubit(downloadFileUseCase: sl()),
+  );
+
+  sl.registerLazySingleton(
+    () => FileDownloadCubit(downloadAndSaveFileUseCase: sl()),
   );
 }
 

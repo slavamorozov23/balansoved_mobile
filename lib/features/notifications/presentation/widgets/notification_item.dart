@@ -7,6 +7,7 @@ class NotificationItem extends StatelessWidget {
   final VoidCallback? onOpenTask;
   final VoidCallback? onMarkAsDelivered;
   final bool isOpeningTask;
+  static final DateFormat _dateFormat = DateFormat('dd.MM.yyyy');
 
   const NotificationItem({
     super.key,
@@ -20,7 +21,6 @@ class NotificationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final dateFormat = DateFormat('dd.MM.yyyy');
 
     final String? taskId = _extractTaskId(notification.additionalInfo);
     final String displayTitle = _resolveTitle(notification);
@@ -84,7 +84,7 @@ class NotificationItem extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        dateFormat.format(notification.createdAt),
+                        _dateFormat.format(notification.createdAt),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
